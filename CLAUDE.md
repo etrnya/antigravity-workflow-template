@@ -27,16 +27,19 @@
 當使用者輸入關鍵字「**收工**」或「**下班了**」時，AI 助理必須執行以下標準作業程序（SOP）：
 
 1. **安全與品質驗證**：
-   - 執行品質驗證（如 `npm run test`、Lint 檢查、型別檢查等），確保代碼可正常運行。
+   - 執行品質驗證（如 `npm run test`、Lint 檢查、型別檢查等），確保代碼可正常運行.
    - 掃描代碼檔案，防範敏感金鑰（API Key）外洩。
 2. **整理專案待辦**：
    - 將已完成任務從專案 `PENDING.md` 中移至歷史提交，維持活躍待辦精簡。
 3. **更新全域摘要**：
    - 執行 `python scripts/sync_pending.py` 自動更新全域 `PENDING.md` 摘要。
-4. **Git 提交與安全推送**：
-   - 顯示 `git status` 與 `git diff` 供使用者預覽。
-   - 若遠端 Push 遭拒（發生衝突）：**嚴禁使用 `--force`**。必須先執行 `git stash`，執行 `git pull rebase` 拉取變更，若產生衝突，必須將衝突代碼顯示給使用者，停止並等待人工解決。
-   - 順利通過後，使用 Conventional Commits 格式進行 Commit 與 Push。
+4. **Git 提交前安全檢查 (Preflight Check)**：
+   - 在進行任何 Commit 或 Push 之前，必須執行並輸出：`git status`、`git branch` 與 `git log --oneline --decorate -5`。
+   - **狀態安全分級**：
+     * **Fast-forward / Untracked**：可由 AI 助理正常操作並更新。
+     * **Rebase conflict (衝突中) / Detached HEAD (游離分支) / Diverged branches (分支分歧)**：**嚴禁自動處置**，必須立刻停止並請求人工協助。
+     * **Force push needed (需要強推)**：**永久禁止執行**。
+   - 若發生遠端 Pull 拒絕，優先建立並切換至臨時沙盒分支（如 `temp/refactor-xxx`）或執行 Worktree 隔離，嚴禁使用盲目 `stash` 以防覆蓋或丟失歷史棧。
 5. **更新專案履歷**：
    - 檢查並更新 `UserManual/README.md` 的已開發專案表。
 6. **對話總結**：
@@ -54,7 +57,7 @@
 | :--- | :--- | :--- |
 | **低風險 (Low)** | 文檔修改（README, 註解）、排版調整、樣式 (CSS) 修改、寫入測試案例。 | 可在不中斷對話的情況下自行編寫並執行驗證，但必須在對話結尾提供變更摘要。 |
 | **中風險 (Medium)** | 修改業務邏輯（JS/TS 程式碼、React 元件）、API 路由、自動化指令腳本。 | **必須先列出具體修改計畫與受影響檔案，取得使用者明確回覆（如「同意」、「Go」）後方可執行檔案寫入。** |
-| **高風險 (High)** | 檔案與目錄刪除、修改環境變數 (`.env`)、資料庫 Migration、升級/刪除套件依賴、修改本 `CLAUDE.md` 規則。 | **嚴禁一次性執行。必須拆分為單步，且在執行刪除或破壞性變更前，必須引導使用者執行本地備份（如 `git stash` 或複製臨時備份），每一步皆須經人工確認。** |
+| **高風險 (High)** | 檔案與目錄刪除、修改環境變數 (`.env`)、資料庫 Migration、升級/刪除套件依賴、修改本 `CLAUDE.md` 規則。 | **嚴禁一次性執行。必須拆分為單步，且在執行任何破壞性或大規模重構變更前，必須引導使用者建立臨時檢查點分支（如 `git switch -c temp/refactor-xxx`）或使用 `git worktree` 建立沙盒隔離，每一步皆須經人工確認。** |
 
 ### 2. 測試與自我審查流程 (Test-First & Self-Review)
 AI 助理在修改任何核心邏輯（中/高風險變更）時，必須遵守以下循環：
