@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 import re
+import json
+import subprocess
 import traceback
 from datetime import datetime
 
@@ -26,6 +28,25 @@ def log_sync_error(root_dir, project_name, error_msg, tb_str):
             f.write("="*60 + "\n")
     except Exception as e:
         print(f"寫入錯誤日誌失敗: {e}")
+
+def get_git_info(path):
+    """
+    獲取指定目錄下的 Git 分支與 Commit Hash，用以提供一致性總帳狀態。
+    """
+    try:
+        branch = subprocess.check_output(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], 
+            cwd=path, 
+            stderr=subprocess.DEVNULL
+        ).decode('utf-8').strip()
+        commit = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], 
+            cwd=path, 
+            stderr=subprocess.DEVNULL
+        ).decode('utf-8').strip()
+        return {"branch": branch, "commit": commit}
+    except Exception:
+        return {"branch": "unknown", "commit": "unknown"}
 
 def get_last_updated_from_file(file_path, root_dir=None, project_name=None):
     """
@@ -89,6 +110,11 @@ def main():
     print(f"全域 PENDING.md 路徑: {global_pending_path}")
     
     project_summaries = []
+    ledger_data = {
+        "last_sync_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "workspace_root": get_git_info(root_dir),
+        "projects": {}
+    }
     
     # 遍歷根目錄下的所有子目錄
     for item in sorted(os.listdir(root_dir)):
@@ -98,6 +124,15 @@ def main():
             if os.path.exists(project_pending_path):
                 task_count = count_pending_tasks(project_pending_path, root_dir, item)
                 last_updated = get_last_updated_from_file(project_pending_path, root_dir, item)
+                git_info = get_git_info(item_path)
+                
+                # 寫入總帳結構
+                ledger_data["projects"][item] = {
+                    "branch": git_info["branch"],
+                    "commit": git_info["commit"],
+                    "pending_tasks": task_count,
+                    "last_updated": last_updated
+                }
                 
                 # 建立相對路徑連結
                 rel_link = f"./{item}/PENDING.md"
@@ -131,6 +166,17 @@ def main():
             print("錯誤：全域 PENDING.md 中找不到標記 <!-- PROJECT_LIST_START --> 或 <!-- PROJECT_LIST_END -->")
     except Exception as e:
         print(f"更新全域 PENDING.md 時發生錯誤: {e}")
+
+    # 寫入狀態總帳 ledger.json
+    try:
+        system_state_dir = os.path.join(root_dir, 'system-state')
+        os.makedirs(system_state_dir, exist_ok=True)
+        ledger_path = os.path.join(system_state_dir, 'ledger.json')
+        with open(ledger_path, 'w', encoding='utf-8') as f:
+            json.dump(ledger_data, f, indent=2, ensure_ascii=False)
+        print("成功更新系統狀態總帳 system-state/ledger.json！")
+    except Exception as e:
+        print(f"更新狀態總帳時發生錯誤: {e}")
 
 if __name__ == '__main__':
     main()
