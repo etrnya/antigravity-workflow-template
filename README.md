@@ -1,5 +1,7 @@
 # 🌌 AI 協作待辦與工作流範本專案 (Antigravity Workflow Template)
 
+[繁體中文](README.md) • [English](README_EN.md)
+
 本專案旨在提供一套結構化、高效率且具備「確認閘（Confirmation Gate）」的 AI 協作工作流範本。特別針對多專案並行開發之使用者，解決 Memory 檔案過大、上下文膨脹（Context Bloat）導致 AI 判斷力鈍化，以及開工時 AI 未經確認即擅自動手修改代碼等痛點。
 
 ---

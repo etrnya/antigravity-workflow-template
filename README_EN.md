@@ -1,5 +1,7 @@
 # 🌌 AI Collaborative Todo & Workflow Template (Antigravity Workflow Template)
 
+[繁體中文](README.md) • [English](README_EN.md)
+
 This project provides a structured, highly efficient, and "Confirmation Gate"-enabled AI collaborative workflow template. It is designed for developers running multiple concurrent projects, solving common issues such as bloated memory files (Context Bloat), sluggish AI decision-making, and cases where the AI edits code prematurely upon starting work without explicit confirmation.
 
 ---
@@ -49,7 +51,7 @@ c:\Users\etrny\.gemini\antigravity\scratch\ (Workspace Root)
 3. **Run Synchronization**:
    - Every time a project's todo list is modified, execute the following command at the workspace root:
      ```powershell
-     python scripts/scripts/sync_pending.py
+     python scripts/sync_pending.py
      ```
    - The script automatically counts unchecked tasks in each project, formats the link, and updates the section between `<!-- PROJECT_LIST_START -->` and `<!-- PROJECT_LIST_END -->` markers inside the root `PENDING.md`.
 
